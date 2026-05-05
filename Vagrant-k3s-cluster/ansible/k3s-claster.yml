@@ -1,0 +1,192 @@
+---
+- name: Master
+  hosts: master
+  gather_facts: true
+  become: true
+
+  tasks:
+
+    - name: Update system
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+
+    - name: Install utils
+      ansible.builtin.apt:
+        name:
+          - curl
+          - docker.io
+        update_cache: true
+
+    - name: Install k3s for master
+      ansible.builtin.shell:
+        cmd: curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+      changed_when: false
+    - name: Enable IPv4 forwarding
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: "1"
+        state: present
+        reload: true
+
+    - name: Allow forwarding policy
+      ansible.builtin.iptables:
+        chain: FORWARD
+        policy: ACCEPT
+
+    - name: Allow host network to pod network forwarding
+      ansible.builtin.iptables:
+        chain: FORWARD
+        source: 192.168.56.0/24
+        destination: 10.42.0.0/16
+        jump: ACCEPT
+
+    - name: Allow host network to service network forwarding
+      ansible.builtin.iptables:
+        chain: FORWARD
+        source: 192.168.56.0/24
+        destination: 10.43.0.0/16
+        jump: ACCEPT
+
+    - name: Allow pod network to host network forwarding
+      ansible.builtin.iptables:
+        chain: FORWARD
+        source: 10.42.0.0/16
+        destination: 192.168.56.0/24
+        jump: ACCEPT
+
+    - name: Allow service network to host network forwarding
+      ansible.builtin.iptables:
+        chain: FORWARD
+        source: 10.43.0.0/16
+        destination: 192.168.56.0/24
+        jump: ACCEPT
+
+    - name: Read k3s node token
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_raw
+      run_once: true
+
+    - name: Set k3s token fact
+      ansible.builtin.set_fact:
+        k3s_token: "{{ k3s_token_raw.content | b64decode | trim }}"
+      run_once: true
+
+    - name: Add TLS SAN flag for host access
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/system/k3s.service
+        insertafter: "'--write-kubeconfig-mode' \\\\"
+        line: "    '--tls-san' \\\\"
+      notify: Restart k3s
+
+    - name: Add TLS SAN value for host access
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/system/k3s.service
+        insertafter: "    '--tls-san' \\\\"
+        line: "    '192.168.56.10' \\\\"
+      notify: Restart k3s
+
+    - name: Wait for k3s to be ready
+      ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes
+      register: nodes_out
+      retries: 10
+      delay: 5
+      until: nodes_out.rc == 0
+      changed_when: false
+
+    - name: Ensure local kubeconfig dir exists
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../.kube"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Read cluster CA certificate
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/tls/server-ca.crt
+      register: k3s_ca_raw
+      run_once: true
+      no_log: true
+
+    - name: Read admin client certificate
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/tls/client-admin.crt
+      register: k3s_client_crt_raw
+      run_once: true
+      no_log: true
+
+    - name: Read admin client key
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/tls/client-admin.key
+      register: k3s_client_key_raw
+      run_once: true
+      no_log: true
+
+    - name: Write CA certificate to host
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/../.kube/ca.crt"
+        mode: "0600"
+        content: "{{ k3s_ca_raw.content | b64decode }}"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      no_log: true
+
+    - name: Write client certificate to host
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/../.kube/client.crt"
+        mode: "0600"
+        content: "{{ k3s_client_crt_raw.content | b64decode }}"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      no_log: true
+
+    - name: Write client key to host
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/../.kube/client.key"
+        mode: "0600"
+        content: "{{ k3s_client_key_raw.content | b64decode }}"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      no_log: true
+
+    - name: Show nodes
+      ansible.builtin.debug:
+        msg: "{{ nodes_out.stdout }}"
+
+  handlers:
+    - name: Restart k3s
+      ansible.builtin.systemd:
+        name: k3s
+        state: restarted
+        daemon_reload: true
+
+
+- name: Worker
+  hosts: worker
+  gather_facts: true
+  become: true
+
+  tasks:
+
+    - name: Update system
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+
+    - name: Install utils
+      ansible.builtin.apt:
+        name:
+          - curl
+          - docker.io
+        update_cache: true
+
+    - name: Install k3s for worker
+      ansible.builtin.shell:
+        cmd: curl -sfL https://get.k3s.io | K3S_URL=https://192.168.56.10:6443 K3S_TOKEN={{ hostvars['master'].k3s_token }} sh -s - agent
+      changed_when: false

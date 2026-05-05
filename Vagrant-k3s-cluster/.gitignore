@@ -1,0 +1,3 @@
+.kube/
+.vagrant/
+ansible/group_vars

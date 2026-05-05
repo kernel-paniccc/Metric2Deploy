@@ -1,0 +1,21 @@
+Vagrant.configure("2") do |config|
+    config.vm.box = "generic/ubuntu2204"
+
+    config.vm.define "master" do |m|
+      m.vm.hostname = "k8s-master"
+      m.vm.network "private_network", ip: "192.168.56.10"
+      m.vm.provider :libvirt do |v|
+        v.cpus = 2
+        v.memory = 1024
+      end
+    end
+
+    config.vm.define "worker" do |w|
+      w.vm.hostname = "k8s-worker"
+      w.vm.network "private_network", ip: "192.168.56.11"
+      w.vm.provider :libvirt do |v|
+        v.cpus = 2
+        v.memory = 1024
+      end
+    end
+  end
