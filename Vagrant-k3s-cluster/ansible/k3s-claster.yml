@@ -3,6 +3,8 @@
   hosts: master
   gather_facts: true
   become: true
+  vars:
+    master_api_host: "{{ hostvars['master'].ansible_host }}"
 
   tasks:
 
@@ -20,7 +22,9 @@
 
     - name: Install k3s for master
       ansible.builtin.shell:
-        cmd: curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+        cmd: >-
+          curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+          --tls-san {{ master_api_host }}
       changed_when: false
     - name: Enable IPv4 forwarding
       ansible.posix.sysctl:
@@ -72,20 +76,6 @@
       ansible.builtin.set_fact:
         k3s_token: "{{ k3s_token_raw.content | b64decode | trim }}"
       run_once: true
-
-    - name: Add TLS SAN flag for host access
-      ansible.builtin.lineinfile:
-        path: /etc/systemd/system/k3s.service
-        insertafter: "'--write-kubeconfig-mode' \\\\"
-        line: "    '--tls-san' \\\\"
-      notify: Restart k3s
-
-    - name: Add TLS SAN value for host access
-      ansible.builtin.lineinfile:
-        path: /etc/systemd/system/k3s.service
-        insertafter: "    '--tls-san' \\\\"
-        line: "    '192.168.56.10' \\\\"
-      notify: Restart k3s
 
     - name: Wait for k3s to be ready
       ansible.builtin.command: /usr/local/bin/k3s kubectl get nodes
@@ -155,22 +145,45 @@
       run_once: true
       no_log: true
 
+    - name: Write kubeconfig to host
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/../kubeconfig"
+        mode: "0600"
+        content: |
+          apiVersion: v1
+          clusters:
+            - cluster:
+                server: https://{{ master_api_host }}:6443
+                certificate-authority: ./.kube/ca.crt
+              name: default
+          contexts:
+            - context:
+                cluster: default
+                user: default
+                namespace: demo
+              name: default
+          current-context: default
+          kind: Config
+          users:
+            - name: default
+              user:
+                client-certificate: ./.kube/client.crt
+                client-key: ./.kube/client.key
+      delegate_to: localhost
+      become: false
+      run_once: true
+
     - name: Show nodes
       ansible.builtin.debug:
         msg: "{{ nodes_out.stdout }}"
-
-  handlers:
-    - name: Restart k3s
-      ansible.builtin.systemd:
-        name: k3s
-        state: restarted
-        daemon_reload: true
 
 
 - name: Worker
   hosts: worker
   gather_facts: true
   become: true
+  vars:
+    master_api_host: "{{ hostvars['master'].ansible_host }}"
 
   tasks:
 
@@ -188,5 +201,7 @@
 
     - name: Install k3s for worker
       ansible.builtin.shell:
-        cmd: curl -sfL https://get.k3s.io | K3S_URL=https://192.168.56.10:6443 K3S_TOKEN={{ hostvars['master'].k3s_token }} sh -s - agent
+        cmd: >-
+          curl -sfL https://get.k3s.io | K3S_URL=https://{{ master_api_host }}:6443
+          K3S_TOKEN={{ hostvars['master'].k3s_token }} sh -s - agent
       changed_when: false
