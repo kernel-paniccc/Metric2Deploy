@@ -1,30 +1,28 @@
 name: Publish Image
 
 on:
-  workflow_run:
-    workflows:
-      - Security CI
-    types:
-      - completed
+  push:
+    branches:
+      - "main"
 
 permissions:
   contents: read
   packages: write
 
 jobs:
+  security:
+    name: Security Checks
+    uses: ./.github/workflows/security-ci.yml
+
   publish:
     name: Build And Push
     runs-on: ubuntu-latest
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'main'
+    needs:
+      - security
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
