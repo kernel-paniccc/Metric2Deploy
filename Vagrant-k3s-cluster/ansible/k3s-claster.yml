@@ -5,6 +5,11 @@
   become: true
   vars:
     master_api_host: "{{ hostvars['master'].ansible_host }}"
+    k3s_version: "v1.35.5+k3s1"
+    local_kube_root: "{{ lookup('env', 'HOME') }}/.kube"
+    local_cluster_name: "metric2deploy"
+    local_cluster_dir: "{{ local_kube_root }}/{{ local_cluster_name }}"
+    local_kubeconfig_path: "{{ local_kube_root }}/{{ local_cluster_name }}.yaml"
 
   tasks:
 
@@ -23,8 +28,12 @@
     - name: Install k3s for master
       ansible.builtin.shell:
         cmd: >-
-          curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version }} sh -s - --write-kubeconfig-mode 644
           --tls-san {{ master_api_host }}
+      register: master_k3s_install
+      retries: 5
+      delay: 15
+      until: master_k3s_install.rc == 0
       changed_when: false
     - name: Enable IPv4 forwarding
       ansible.posix.sysctl:
@@ -87,7 +96,7 @@
 
     - name: Ensure local kubeconfig dir exists
       ansible.builtin.file:
-        path: "{{ playbook_dir }}/../.kube"
+        path: "{{ local_cluster_dir }}"
         state: directory
         mode: "0700"
       delegate_to: localhost
@@ -117,7 +126,7 @@
 
     - name: Write CA certificate to host
       ansible.builtin.copy:
-        dest: "{{ playbook_dir }}/../.kube/ca.crt"
+        dest: "{{ local_cluster_dir }}/ca.crt"
         mode: "0600"
         content: "{{ k3s_ca_raw.content | b64decode }}"
       delegate_to: localhost
@@ -127,7 +136,7 @@
 
     - name: Write client certificate to host
       ansible.builtin.copy:
-        dest: "{{ playbook_dir }}/../.kube/client.crt"
+        dest: "{{ local_cluster_dir }}/client.crt"
         mode: "0600"
         content: "{{ k3s_client_crt_raw.content | b64decode }}"
       delegate_to: localhost
@@ -137,7 +146,7 @@
 
     - name: Write client key to host
       ansible.builtin.copy:
-        dest: "{{ playbook_dir }}/../.kube/client.key"
+        dest: "{{ local_cluster_dir }}/client.key"
         mode: "0600"
         content: "{{ k3s_client_key_raw.content | b64decode }}"
       delegate_to: localhost
@@ -145,32 +154,157 @@
       run_once: true
       no_log: true
 
-    - name: Write kubeconfig to host
+    - name: Write project kubeconfig to host
       ansible.builtin.copy:
-        dest: "{{ playbook_dir }}/../kubeconfig"
+        dest: "{{ local_kubeconfig_path }}"
         mode: "0600"
         content: |
           apiVersion: v1
           clusters:
             - cluster:
                 server: https://{{ master_api_host }}:6443
-                certificate-authority: ./.kube/ca.crt
-              name: default
+                certificate-authority: {{ local_cluster_dir }}/ca.crt
+              name: {{ local_cluster_name }}
           contexts:
             - context:
-                cluster: default
-                user: default
+                cluster: {{ local_cluster_name }}
+                user: {{ local_cluster_name }}
                 namespace: demo
-              name: default
-          current-context: default
+              name: {{ local_cluster_name }}
+          current-context: {{ local_cluster_name }}
           kind: Config
           users:
-            - name: default
+            - name: {{ local_cluster_name }}
               user:
-                client-certificate: ./.kube/client.crt
-                client-key: ./.kube/client.key
+                client-certificate: {{ local_cluster_dir }}/client.crt
+                client-key: {{ local_cluster_dir }}/client.key
       delegate_to: localhost
       become: false
+      run_once: true
+
+    - name: Remove stale metric2deploy context from default kubeconfig
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - config
+          - delete-context
+          - "{{ local_cluster_name }}"
+          - --kubeconfig
+          - "{{ local_kube_root }}/config"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      failed_when: false
+      changed_when: false
+
+    - name: Remove stale metric2deploy cluster from default kubeconfig
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - config
+          - delete-cluster
+          - "{{ local_cluster_name }}"
+          - --kubeconfig
+          - "{{ local_kube_root }}/config"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      failed_when: false
+      changed_when: false
+
+    - name: Remove stale metric2deploy user from default kubeconfig
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - config
+          - delete-user
+          - "{{ local_cluster_name }}"
+          - --kubeconfig
+          - "{{ local_kube_root }}/config"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      failed_when: false
+      changed_when: false
+
+    - name: Register metric2deploy cluster in default kubeconfig
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - config
+          - set-cluster
+          - "{{ local_cluster_name }}"
+          - "--server=https://{{ master_api_host }}:6443"
+          - "--certificate-authority={{ local_cluster_dir }}/ca.crt"
+          - --embed-certs=false
+          - --kubeconfig
+          - "{{ local_kube_root }}/config"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      changed_when: true
+
+    - name: Register metric2deploy credentials in default kubeconfig
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - config
+          - set-credentials
+          - "{{ local_cluster_name }}"
+          - "--client-certificate={{ local_cluster_dir }}/client.crt"
+          - "--client-key={{ local_cluster_dir }}/client.key"
+          - --embed-certs=false
+          - --kubeconfig
+          - "{{ local_kube_root }}/config"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      changed_when: true
+
+    - name: Register metric2deploy context in default kubeconfig
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - config
+          - set-context
+          - "{{ local_cluster_name }}"
+          - "--cluster={{ local_cluster_name }}"
+          - "--user={{ local_cluster_name }}"
+          - --namespace=demo
+          - --kubeconfig
+          - "{{ local_kube_root }}/config"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      changed_when: true
+
+    - name: Switch default kubeconfig to metric2deploy
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - config
+          - use-context
+          - "{{ local_cluster_name }}"
+          - --kubeconfig
+          - "{{ local_kube_root }}/config"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      changed_when: true
+
+    - name: Show kubeconfig paths
+      ansible.builtin.debug:
+        msg:
+          - "Project kubeconfig written to {{ local_kubeconfig_path }}"
+          - "Default kubeconfig context {{ local_cluster_name }} registered in {{ local_kube_root }}/config"
+      run_once: true
+
+    - name: Warn about controller KUBECONFIG override
+      ansible.builtin.debug:
+        msg:
+          - "Controller KUBECONFIG is set to {{ lookup('env', 'KUBECONFIG') }}"
+          - "Unset KUBECONFIG or kubectl/kubectx will ignore {{ local_kube_root }}/config"
+      when: lookup('env', 'KUBECONFIG') | length > 0
       run_once: true
 
     - name: Show nodes
@@ -184,6 +318,7 @@
   become: true
   vars:
     master_api_host: "{{ hostvars['master'].ansible_host }}"
+    k3s_version: "v1.35.5+k3s1"
 
   tasks:
 
@@ -202,6 +337,11 @@
     - name: Install k3s for worker
       ansible.builtin.shell:
         cmd: >-
-          curl -sfL https://get.k3s.io | K3S_URL=https://{{ master_api_host }}:6443
-          K3S_TOKEN={{ hostvars['master'].k3s_token }} sh -s - agent
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version }}
+          K3S_URL=https://{{ master_api_host }}:6443 K3S_TOKEN={{ hostvars['master'].k3s_token }}
+          sh -s - agent
+      register: worker_k3s_install
+      retries: 5
+      delay: 15
+      until: worker_k3s_install.rc == 0
       changed_when: false
