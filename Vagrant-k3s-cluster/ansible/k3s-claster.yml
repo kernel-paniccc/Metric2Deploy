@@ -197,21 +197,6 @@
       failed_when: false
       changed_when: false
 
-    - name: Remove stale metric2deploy cluster from default kubeconfig
-      ansible.builtin.command:
-        argv:
-          - kubectl
-          - config
-          - delete-cluster
-          - "{{ local_cluster_name }}"
-          - --kubeconfig
-          - "{{ local_kube_root }}/config"
-      delegate_to: localhost
-      become: false
-      run_once: true
-      failed_when: false
-      changed_when: false
-
     - name: Remove stale metric2deploy user from default kubeconfig
       ansible.builtin.command:
         argv:
