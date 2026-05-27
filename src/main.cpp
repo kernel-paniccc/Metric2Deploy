@@ -11,6 +11,7 @@
 #include <iostream>
 #include <map>
 #include <random>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -89,6 +90,30 @@ std::string read_file(const std::string& path) {
     return buffer.str();
 }
 
+std::optional<std::string> read_first_line(const std::string& path) {
+    std::ifstream file(path);
+    if (!file) {
+        return std::nullopt;
+    }
+
+    std::string line;
+    if (!std::getline(file, line)) {
+        return std::nullopt;
+    }
+
+    return line;
+}
+
+std::string trim(const std::string& value) {
+    const auto start = value.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) {
+        return "";
+    }
+
+    const auto end = value.find_last_not_of(" \t\r\n");
+    return value.substr(start, end - start + 1);
+}
+
 std::string make_response(
     int status,
     const std::string& status_text,
@@ -113,6 +138,71 @@ std::string now_iso8601() {
     std::ostringstream out;
     out << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%SZ");
     return out.str();
+}
+
+std::string collect_system_metrics() {
+    std::ostringstream body;
+    body << "{";
+    body << "\"collected_at\":\"" << now_iso8601() << "\"";
+
+    if (const auto uptime_line = read_first_line("/proc/uptime")) {
+        std::istringstream uptime_stream(*uptime_line);
+        double uptime_seconds = 0.0;
+        double idle_seconds = 0.0;
+        if (uptime_stream >> uptime_seconds >> idle_seconds) {
+            body << ",\"uptime_seconds\":" << std::fixed << std::setprecision(2) << uptime_seconds;
+            body << ",\"idle_seconds\":" << std::fixed << std::setprecision(2) << idle_seconds;
+        }
+    }
+
+    if (const auto loadavg_line = read_first_line("/proc/loadavg")) {
+        std::istringstream loadavg_stream(*loadavg_line);
+        double load1 = 0.0;
+        double load5 = 0.0;
+        double load15 = 0.0;
+        if (loadavg_stream >> load1 >> load5 >> load15) {
+            body << ",\"load_average\":{";
+            body << "\"1m\":" << std::fixed << std::setprecision(2) << load1 << ",";
+            body << "\"5m\":" << std::fixed << std::setprecision(2) << load5 << ",";
+            body << "\"15m\":" << std::fixed << std::setprecision(2) << load15 << "}";
+        }
+    }
+
+    std::ifstream meminfo("/proc/meminfo");
+    if (meminfo) {
+        long long mem_total_kb = -1;
+        long long mem_available_kb = -1;
+        std::string key;
+        long long value = 0;
+        std::string unit;
+
+        while (meminfo >> key >> value >> unit) {
+            if (key == "MemTotal:") {
+                mem_total_kb = value;
+            } else if (key == "MemAvailable:") {
+                mem_available_kb = value;
+            }
+        }
+
+        if (mem_total_kb >= 0) {
+            body << ",\"memory\":{";
+            body << "\"total_kb\":" << mem_total_kb;
+            if (mem_available_kb >= 0) {
+                body << ",\"available_kb\":" << mem_available_kb;
+                body << ",\"used_kb\":" << (mem_total_kb - mem_available_kb);
+            }
+            body << "}";
+        }
+    }
+
+    body << ",\"cpu_count\":" << sysconf(_SC_NPROCESSORS_ONLN);
+
+    if (const auto hostname = read_first_line("/proc/sys/kernel/hostname")) {
+        body << ",\"hostname\":\"" << json_escape(trim(*hostname)) << "\"";
+    }
+
+    body << "}";
+    return body.str();
 }
 
 std::string handle_request(const std::string& request) {
@@ -220,6 +310,14 @@ std::string handle_request(const std::string& request) {
 
         body << "}}";
         return make_response(200, "OK", "application/json", body.str());
+    }
+
+    if (path == "/metrics/system") {
+        return make_response(200, "OK", "application/json", collect_system_metrics());
+    }
+
+    if (path == "/metrics/system/html") {
+        return make_response(200, "OK", "text/html; charset=utf-8", read_file("templates/system_metrics.html"));
     }
 
     return make_response(404, "Not Found", "application/json", "{\"detail\":\"not found\"}");
