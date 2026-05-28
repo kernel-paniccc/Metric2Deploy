@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metric2deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metric2deploy
+  template:
+    metadata:
+      labels:
+        app: metric2deploy
+    spec:
+      containers:
+      - name: metric2deploy
+        image: ghcr.io/kernel-paniccc/metric2deploy:latest
+        ports:
+          - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+        resources:
+          requests:
+            cpu: 100m

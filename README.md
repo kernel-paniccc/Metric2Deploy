@@ -10,7 +10,6 @@
 - `ansible`
 - `kubectl`
 - `kubectx`
-- `kubens`
 
 ### 1. Поднимаем виртуалки
 
@@ -33,4 +32,11 @@ ansible-playbook -i ansible/inventory.ini ansible/k3s-claster.yml -v
 unset KUBECONFIG
 kubectl config get-contexts
 kubectx metric2deploy
+kubectl config set-context --current --namespace=default
+```
+
+### 4. Деплой в кластер
+
+```bash 
+kubectl apply -f k3s-manifest/
 ```
