@@ -1,0 +1,38 @@
+name: Update Deployment Image
+
+on:
+  workflow_call:
+    inputs:
+      repository_owner:
+        required: true
+        type: string
+      version_tag:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update-manifest:
+    name: Patch Kubernetes Manifest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Patch deployment image
+        run: |
+          sed -i "s|image: .*|image: ghcr.io/${{ inputs.repository_owner }}/metric2deploy:${{ inputs.version_tag }}|" k3s-manifest/deployment.yaml
+
+      - name: Commit updated manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add k3s-manifest/deployment.yaml
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(cd): deploy ${{ inputs.version_tag }} [skip ci]"
+          git push origin HEAD:main

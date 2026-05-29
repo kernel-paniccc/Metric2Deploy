@@ -81,4 +81,4 @@ kubectl apply -f FluxCD/*.yaml
 kubectl get gitrepository,kustomization -A
 ```
 
-
+![alt text](img/image.png)

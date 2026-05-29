@@ -1,0 +1,13 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: metric2deploy
+  namespace: flux-system
+spec:
+  interval: 1m
+  path: ./k3s-manifest
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: metric2deploy
+  wait: true
