@@ -24,6 +24,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Compute release tag
+        id: version
+        run: printf 'version_tag=0.0.%s\n' "$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -38,6 +42,7 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/metric2deploy
           tags: |
             type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version_tag }}
             type=sha,prefix=sha-
 
       - name: Build and push image
