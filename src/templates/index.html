@@ -1,117 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DevOps Playground</title>
-  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}}</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            background: '#0b1021',
-            card: 'rgba(255, 255, 255, 0.05)',
-            accent: '#22d3ee',
-          }
-        }
-      }
-    }
-  </script>
 </head>
-<body class="min-h-screen bg-background text-slate-100 flex items-center justify-center p-4">
-  <div class="w-full max-w-5xl bg-white/5 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md p-8 md:p-10">
-    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h1 class="text-3xl md:text-4xl font-semibold tracking-tight">DevOps Playground</h1>
-        <p class="text-slate-400 mt-2">Minimal C++ testbed for probes, health checks, and quick experiments.</p>
-      </div>
-      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-200 font-semibold">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_6px_rgba(52,211,153,0.15)]"></span>
-        Live
-      </div>
-    </header>
+<body class="min-h-screen bg-[linear-gradient(160deg,#020617_0%,#111827_45%,#1f2937_100%)] text-slate-100">
+  <main class="mx-auto flex min-h-screen max-w-5xl items-center px-6 py-16">
+    <section class="w-full overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/80 shadow-2xl shadow-cyan-950/40 backdrop-blur">
+      <div class="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.28),transparent_28%),radial-gradient(circle_at_right,rgba(251,191,36,0.18),transparent_24%)] p-8 md:p-12">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.35em] text-cyan-300">Prod-like Demo</p>
+            <h1 class="mt-4 text-4xl font-black tracking-tight md:text-6xl">{{title}}</h1>
+            <p class="mt-4 max-w-2xl text-lg text-slate-300">Минимальный C++ сервис с одной главной страницей, быстрым health-check и базовыми runtime-метриками контейнера.</p>
+          </div>
+          <a href="/health" class="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-5 py-3 text-sm font-semibold text-emerald-200">health: ok</a>
+        </div>
 
-    <section class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
-      <a href="/health" target="_blank" class="group relative overflow-hidden rounded-xl border border-white/10 bg-card p-5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-lg hover:shadow-cyan-500/15">
-        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10"></div>
-        <div class="relative">
-          <span class="inline-flex px-3 py-1 text-xs rounded-full bg-white/10 border border-white/10 text-slate-200">Health</span>
-          <h3 class="mt-3 text-xl font-semibold">Health</h3>
-          <p class="mt-2 text-sm text-slate-400 leading-relaxed">Simple readiness probe. Returns status JSON to feed liveness checks.</p>
-          <div class="mt-4 inline-flex items-center gap-2 text-accent font-semibold">
-            Open endpoint →
-            <span aria-hidden="true" class="transition-transform duration-200 group-hover:translate-x-1">→</span>
-          </div>
+        <div class="mt-10 grid gap-4 md:grid-cols-3">
+          <article class="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p class="text-sm text-slate-400">Hostname</p>
+            <p class="mt-3 text-2xl font-bold">{{host}}</p>
+          </article>
+          <article class="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p class="text-sm text-slate-400">CPU cores</p>
+            <p class="mt-3 text-2xl font-bold">{{cpu}}</p>
+          </article>
+          <article class="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p class="text-sm text-slate-400">Used memory</p>
+            <p class="mt-3 text-2xl font-bold">{{memory}}</p>
+          </article>
         </div>
-      </a>
-      <a href="/time" target="_blank" class="group relative overflow-hidden rounded-xl border border-white/10 bg-card p-5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-lg hover:shadow-cyan-500/15">
-        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10"></div>
-        <div class="relative">
-          <span class="inline-flex px-3 py-1 text-xs rounded-full bg-white/10 border border-white/10 text-slate-200">Clock</span>
-          <h3 class="mt-3 text-xl font-semibold">Time</h3>
-          <p class="mt-2 text-sm text-slate-400 leading-relaxed">UTC timestamp both ISO8601 and epoch seconds.</p>
-          <div class="mt-4 inline-flex items-center gap-2 text-accent font-semibold">
-            Open endpoint →
-            <span aria-hidden="true" class="transition-transform duration-200 group-hover:translate-x-1">→</span>
-          </div>
+
+        <div class="mt-4 grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+          <article class="rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-6">
+            <p class="text-sm text-cyan-100/80">Service role</p>
+            <p class="mt-3 text-2xl font-bold">Landing page for deployment checks</p>
+            <p class="mt-3 text-slate-200">Подходит для smoke test после выката: страница показывает, что nginx, reverse proxy и C++ backend отвечают корректно.</p>
+          </article>
+          <article class="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-6">
+            <p class="text-sm text-amber-100/80">Uptime</p>
+            <p class="mt-3 text-3xl font-black">{{uptime}}</p>
+            <p class="mt-2 text-slate-200">время работы ноды с `/proc/uptime`</p>
+          </article>
         </div>
-      </a>
-      <a href="/random?min=1&amp;max=6" target="_blank" class="group relative overflow-hidden rounded-xl border border-white/10 bg-card p-5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-lg hover:shadow-cyan-500/15">
-        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10"></div>
-        <div class="relative">
-          <span class="inline-flex px-3 py-1 text-xs rounded-full bg-white/10 border border-white/10 text-slate-200">Random</span>
-          <h3 class="mt-3 text-xl font-semibold">Random</h3>
-          <p class="mt-2 text-sm text-slate-400 leading-relaxed">Returns a random integer within bounds. Handy for response variance.</p>
-          <div class="mt-4 inline-flex items-center gap-2 text-accent font-semibold">
-            Roll a die →
-            <span aria-hidden="true" class="transition-transform duration-200 group-hover:translate-x-1">→</span>
-          </div>
-        </div>
-      </a>
-      <a href="/echo?message=ping" target="_blank" class="group relative overflow-hidden rounded-xl border border-white/10 bg-card p-5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-lg hover:shadow-cyan-500/15">
-        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10"></div>
-        <div class="relative">
-          <span class="inline-flex px-3 py-1 text-xs rounded-full bg-white/10 border border-white/10 text-slate-200">Echo</span>
-          <h3 class="mt-3 text-xl font-semibold">Echo</h3>
-          <p class="mt-2 text-sm text-slate-400 leading-relaxed">Loop a message back for quick connectivity checks. Validates empty payloads.</p>
-          <div class="mt-4 inline-flex items-center gap-2 text-accent font-semibold">
-            Ping →
-            <span aria-hidden="true" class="transition-transform duration-200 group-hover:translate-x-1">→</span>
-          </div>
-        </div>
-      </a>
-      <a href="/info" target="_blank" class="group relative overflow-hidden rounded-xl border border-white/10 bg-card p-5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-lg hover:shadow-cyan-500/15">
-        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10"></div>
-        <div class="relative">
-          <span class="inline-flex px-3 py-1 text-xs rounded-full bg-white/10 border border-white/10 text-slate-200">Info</span>
-          <h3 class="mt-3 text-xl font-semibold">Info</h3>
-          <p class="mt-2 text-sm text-slate-400 leading-relaxed">Returns hostname, working directory, and selected environment flags.</p>
-          <div class="mt-4 inline-flex items-center gap-2 text-accent font-semibold">
-            Inspect →
-            <span aria-hidden="true" class="transition-transform duration-200 group-hover:translate-x-1">→</span>
-          </div>
-        </div>
-      </a>
-      <a href="/metrics/system/html" target="_blank" class="group relative overflow-hidden rounded-xl border border-white/10 bg-card p-5 transition duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-lg hover:shadow-cyan-500/15">
-        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10"></div>
-        <div class="relative">
-          <span class="inline-flex px-3 py-1 text-xs rounded-full bg-white/10 border border-white/10 text-slate-200">Metrics</span>
-          <h3 class="mt-3 text-xl font-semibold">System Metrics</h3>
-          <p class="mt-2 text-sm text-slate-400 leading-relaxed">HTML wrapper for the system metrics dashboard. Raw JSON stays available at <code>/metrics/system</code>.</p>
-          <div class="mt-4 inline-flex items-center gap-2 text-accent font-semibold">
-            Inspect metrics →
-            <span aria-hidden="true" class="transition-transform duration-200 group-hover:translate-x-1">→</span>
-          </div>
-        </div>
-      </a>
+      </div>
     </section>
-
-    <footer class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-slate-400 text-sm">
-      <span>Try with curl: <code class="text-slate-200">curl -s http://localhost/health</code></span>
-      <span>C++ · Good for K8s probes and load balancer tests</span>
-    </footer>
-  </div>
+  </main>
 </body>
 </html>
