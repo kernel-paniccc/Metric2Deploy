@@ -1,5 +1,5 @@
 
-### ТЗ: реализовать полный цикл деплоя и потдержки ПО (SRE) на уровне продакшана реальной компании (prod-like)
+### ТЗ: реализовать полный цикл деплоя и потдержки ПО (SRE) на уровне прода реальной компании (prod-like)
 
 #### Основной функционал:
 - Пользователь получает возможность полного управления реальным k8s (k3s) кластером и управлением рессурсов
@@ -74,11 +74,19 @@ kubectl config set-context --current --namespace=default
 kubectl apply -f k3s-manifest/
 ```
 
-### 5. Подключаем FluxCD к кластеру
+### 5. Деплоим FluxCD в кластер
 
 ```bash
 kubectl apply -f FluxCD/*.yaml
 kubectl get gitrepository,kustomization -A
 ```
 
+
+### 6. Подключаем FluxCD к кластеру
+
+```bash
+
+```
+
 ![alt text](img/image.png)
+![alt text](img/ngrok.png)
