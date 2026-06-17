@@ -3,6 +3,8 @@
 #include <httplib.h>
 
 
+
+
 std::string render_page() {
     std::string html = read_file("templates/index.html");
     const char* host = std::getenv("HOSTNAME");
@@ -26,6 +28,9 @@ std::string render_page() {
 
 
 int main() {
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
+
     httplib::Server app;
 
     app.Get("/", [](const httplib::Request&, httplib::Response& res) {
@@ -52,7 +57,17 @@ int main() {
         res.set_content(out.str(), "text/plain; version=0.0.4");
     });
 
+    std::thread server_thread([&]() {
+        app.listen("0.0.0.0", 8000);
+    });
+
     std::cout << "listening on :8000\n";
-    app.listen("0.0.0.0", 8000);
+    while (running) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    app.stop();
+    server_thread.join();
+    std::cout << "Server stopped cleanly.\n";
+    return 0;
+    
     
 }

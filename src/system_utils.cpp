@@ -6,6 +6,7 @@
 #include <thread>
 #include <sstream>
 
+
 namespace {
     std::string read_file(const std::string& path) {
         std::ifstream file(path);
@@ -49,4 +50,7 @@ namespace {
             return "n/a";
         }
     }
+    std::atomic<bool> running{true};
+    void signal_handler(int) { running = false; }
+
 }
