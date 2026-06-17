@@ -30,6 +30,14 @@
 - `C++ httplib` - backend приложения
 - `HTML5 + Taiwind CSS` - layout страниц
 
+## Frontend
+
+Главная страница приложения:
+- Современный dark UI с Tailwind CSS
+- Отображение системных метрик (hostname, CPU, memory, uptime)
+- Health check badge для быстрой проверки
+- Адаптивный дизайн для всех устройств
+
 
 #### Темы курса
 - DevOps/CI-CD/VM and Docker/Deploy
@@ -42,6 +50,7 @@
 
 Группа: СКБ251
 Ручкин Иван - DevSecOps + SRE + CloudeSec
+Ганиева Милана - Frontend
 
 ---
 
