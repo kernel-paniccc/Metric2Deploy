@@ -3,8 +3,10 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <thread>
 #include <sstream>
+#include <atomic>
+#include <thread>
+#include <csignal>
 
 
 namespace {
