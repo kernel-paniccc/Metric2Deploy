@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <sstream>
 
 #include <httplib.h>
 
@@ -84,6 +85,23 @@ int main() {
         res.set_content("{\"status\":\"ok\"}", "application/json");
     });
 
+    app.Get("/metrics", [](const httplib::Request&, httplib::Response& res) {
+        std::ostringstream out;
+        out << "# HELP metric2deploy_uptime_seconds Uptime in seconds\n";
+        out << "# TYPE metric2deploy_uptime_seconds gauge\n";
+        std::string uptime_line = first_line("/proc/uptime");
+        double secs = 0;
+        try { secs = std::stod(uptime_line); } catch(...) {}
+        out << "metric2deploy_uptime_seconds " << secs << "\n";
+
+        out << "# HELP metric2deploy_memory_used_bytes Memory used\n";
+        out << "# TYPE metric2deploy_memory_used_bytes gauge\n";
+        out << "metric2deploy_memory_used_bytes " << used_mem_bytes << "\n";
+
+        res.set_content(out.str(), "text/plain; version=0.0.4");
+    });
+
     std::cout << "listening on :8000\n";
     app.listen("0.0.0.0", 8000);
+    
 }
