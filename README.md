@@ -49,11 +49,12 @@
 #### Роли участников
 
 Группа: СКБ251
-Ручкин Иван - DevSecOps + SRE + CloudeSec
 
-Ганиева Милана - UX/UX Layout Designer
+- Ручкин Иван - DevSecOps + SRE + CloudeSec
 
-Яблоков Николай - С++ backend dev
+- Ганиева Милана - UX/UX Layout Designer
+
+- Яблоков Николай - С++ backend dev
 
 ---
 
