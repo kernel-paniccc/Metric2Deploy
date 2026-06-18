@@ -12,8 +12,12 @@ spec:
       labels:
         app: metric2deploy
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: metric2deploy
+        securityContext:
+          allowPrivilegeEscalation: false
         image: ghcr.io/kernel-paniccc/metric2deploy:latest
         ports:
           - containerPort: 80
