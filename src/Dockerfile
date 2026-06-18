@@ -11,7 +11,13 @@ COPY main.cpp .
 COPY templates ./templates
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+RUN useradd -m -u 1001 appuser
+
 RUN g++ -std=c++17 -O2 -o app main.cpp -lcpp-httplib
+
+RUN chown -R appuser:appuser /app
+
+USER appuser
 
 EXPOSE 80
 
