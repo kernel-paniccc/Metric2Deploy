@@ -3,8 +3,6 @@
 #include <httplib.h>
 
 
-
-
 std::string render_page() {
     std::string html = read_file("templates/index.html");
     const char* host = std::getenv("HOSTNAME");
@@ -24,6 +22,7 @@ std::string render_page() {
     replace_all("{{cpu}}", std::to_string(std::thread::hardware_concurrency()));
     replace_all("{{memory}}", memory_used_mb());
     replace_all("{{uptime}}", get_uptime_min());
+    return html;
 }
 
 

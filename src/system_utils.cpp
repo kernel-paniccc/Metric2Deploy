@@ -9,8 +9,11 @@
 #include <csignal>
 
 
-namespace {
-    std::string read_file(const std::string& path) {
+std::atomic<bool> running{true};
+long used_mem_bytes = 0;
+void signal_handler(int) { running = false; }
+
+std::string read_file(const std::string& path) {
         std::ifstream file(path);
         std::ostringstream buffer;
         buffer << file.rdbuf();
@@ -34,6 +37,7 @@ namespace {
                 if (key == "MemTotal:") total = value;
                 if (key == "MemAvailable:") available = value;
             }
+            used_mem_bytes = (total - available) * 1024;
             return total > 0 ? std::to_string((total - available) / 1024) + " MB" : "n/a";
         } catch(...){
             return "n/a";
@@ -52,7 +56,3 @@ namespace {
             return "n/a";
         }
     }
-    std::atomic<bool> running{true};
-    void signal_handler(int) { running = false; }
-
-}
