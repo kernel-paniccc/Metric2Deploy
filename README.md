@@ -24,43 +24,6 @@
 - `HorizontalPodAutoscaler` - автоскейлинг по CPU
 - `Ansible` - автоматическая раскатка кластера и kubeconfig
 - `Vagrant` + `libvirt` - локальный prod-like стенд на VM
-## CI/CD Pipeline
-
-### GitHub Actions
-На каждый push в `main` (кроме изменений `k3s-manifest/deployment.yaml`) запускается пайплайн:
-
-1. **Security Checks** — Semgrep (code analysis) + Gitleaks (secret detection)
-2. **Build & Push** — сборка Docker-образа и публикация в `ghcr.io/kernel-paniccc/metric2deploy` с тегом `0.0.<RUN_NUMBER>`
-3. **Update Manifest** — патч `k3s-manifest/deployment.yaml` с новым тегом и коммит в репозиторий
-
-### FluxCD
-FluxCD установлен в кластере и синхронизирует директорию `k3s-manifest/` из ветки `main` раз в 1 минуту:
-
-```bash
-# Установка FluxCD (если ещё не установлен)
-flux install
-
-# Создание GitRepository и Kustomization
-kubectl apply -f FluxCD/
-
-# Проверка статуса
-kubectl get gitrepository,kustomization -n flux-system
-```
-
-После того как GitHub Actions обновляет `deployment.yaml` с новым тегом образа, FluxCD в течение минуты подхватывает изменения и применяет rolling update в кластере.
-- `GitHub Actions` - CI/CD
-- `GHCR` - registry для контейнерных образов
-- `C++ httplib` - backend приложения
-- `HTML5 + Taiwind CSS` - layout страниц
-
-## Frontend
-
-Главная страница приложения:
-- Современный dark UI с Tailwind CSS
-- Отображение системных метрик (hostname, CPU, memory, uptime)
-- Health check badge для быстрой проверки
-- Адаптивный дизайн для всех устройств
-
 
 #### Темы курса
 - DevOps/CI-CD/VM and Docker/Deploy
@@ -116,14 +79,9 @@ kubectl apply -f k3s-manifest/
 ### 5. Установка FluxCD и деплой манифестов
 
 ```bash
-# Установить FluxCD компоненты
-KUBECONFIG=~/.kube/metric2deploy.yaml flux install
-
-# Применить GitRepository и Kustomization
-KUBECONFIG=~/.kube/metric2deploy.yaml kubectl apply -f FluxCD/
-
-# Проверить синхронизацию
-KUBECONFIG=~/.kube/metric2deploy.yaml kubectl get gitrepository,kustomization -n flux-system
+flux install
+kubectl apply -f FluxCD/
+kubectl get gitrepository,kustomization -n flux-system
 ```
 
 ### 6. Поднимаем ngrok тунель
