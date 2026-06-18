@@ -1,37 +1,9 @@
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <thread>
+#include "system_utils.h"
 
 #include <httplib.h>
 
-namespace {
-std::string read_file(const std::string& path) {
-    std::ifstream file(path);
-    std::ostringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
 
-std::string first_line(const std::string& path) {
-    std::ifstream file(path);
-    std::string line;
-    std::getline(file, line);
-    return line.empty() ? "n/a" : line;
-}
 
-std::string memory_used_mb() {
-    std::ifstream file("/proc/meminfo");
-    std::string key, unit;
-    long total = 0, available = 0, value = 0;
-    while (file >> key >> value >> unit) {
-        if (key == "MemTotal:") total = value;
-        if (key == "MemAvailable:") available = value;
-    }
-    return total > 0 ? std::to_string((total - available) / 1024) + " MB" : "n/a";
-}
 
 std::string render_page() {
     std::string html = read_file("templates/index.html");
@@ -51,12 +23,14 @@ std::string render_page() {
     replace_all("{{host}}", hostname);
     replace_all("{{cpu}}", std::to_string(std::thread::hardware_concurrency()));
     replace_all("{{memory}}", memory_used_mb());
-    replace_all("{{uptime}}", std::to_string(static_cast<int>(seconds / 60)) + " min");
-    return html;
+    replace_all("{{uptime}}", get_uptime_min());
 }
-}  // namespace
+
 
 int main() {
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
+
     httplib::Server app;
 
     app.Get("/", [](const httplib::Request&, httplib::Response& res) {
@@ -67,6 +41,33 @@ int main() {
         res.set_content("{\"status\":\"ok\"}", "application/json");
     });
 
+    app.Get("/metrics", [](const httplib::Request&, httplib::Response& res) {
+        std::ostringstream out;
+        out << "# HELP metric2deploy_uptime_seconds Uptime in seconds\n";
+        out << "# TYPE metric2deploy_uptime_seconds gauge\n";
+        std::string uptime_line = first_line("/proc/uptime");
+        double secs = 0;
+        try { secs = std::stod(uptime_line); } catch(...) {}
+        out << "metric2deploy_uptime_seconds " << secs << "\n";
+
+        out << "# HELP metric2deploy_memory_used_bytes Memory used\n";
+        out << "# TYPE metric2deploy_memory_used_bytes gauge\n";
+        out << "metric2deploy_memory_used_bytes " << used_mem_bytes << "\n";
+
+        res.set_content(out.str(), "text/plain; version=0.0.4");
+    });
+
+    std::thread server_thread([&]() {
+        app.listen("0.0.0.0", 8000);
+    });
+
     std::cout << "listening on :8000\n";
-    app.listen("0.0.0.0", 8000);
+    while (running) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    app.stop();
+    server_thread.join();
+    std::cout << "Server stopped cleanly.\n";
+    return 0;
+    
+    
 }

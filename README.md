@@ -50,7 +50,6 @@
 
 Группа: СКБ251
 Ручкин Иван - DevSecOps + SRE + CloudeSec
-Ганиева Милана - Frontend
 
 ---
 
