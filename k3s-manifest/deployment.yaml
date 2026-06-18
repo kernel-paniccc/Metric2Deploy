@@ -18,7 +18,7 @@ spec:
       - name: metric2deploy
         securityContext:
           allowPrivilegeEscalation: false
-        image: ghcr.io/kernel-paniccc/metric2deploy:0.0.17
+        image: ghcr.io/kernel-paniccc/metric2deploy:0.0.18
         ports:
           - containerPort: 80
         readinessProbe:
