@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{title}}</title>
-  <meta name="description" content="C++ DevOps application - health checks, Docker and k3s deployment">
+  <title>{{ .Title }}</title>
+  <meta name="description" content="Go + Gin DevOps application with health checks, runtime metrics and single-container deployment">
 <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -15,8 +15,8 @@
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p class="text-xs uppercase tracking-[0.35em] text-cyan-300">Prod-like Demo</p>
-            <h1 class="mt-4 text-4xl font-black tracking-tight md:text-6xl">{{title}}</h1>
-            <p class="mt-4 max-w-2xl text-lg text-slate-300">Минимальный C++ сервис с одной главной страницей, быстрым health-check и базовыми runtime-метриками контейнера.</p>
+            <h1 class="mt-4 text-4xl font-black tracking-tight md:text-6xl">{{ .Title }}</h1>
+            <p class="mt-4 max-w-2xl text-lg text-slate-300">Одноконтейнерный Go + Gin сервис для GitOps-пайплайна: landing page, health-check, runtime API и Prometheus-friendly метрики за nginx reverse proxy.</p>
           </div>
           <a href="/health" class="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-5 py-3 text-sm font-semibold text-emerald-200">health: ok</a>
         </div>
@@ -24,15 +24,15 @@
         <div class="mt-10 grid gap-4 md:grid-cols-3">
           <article class="rounded-3xl border border-white/10 bg-black/20 p-5">
             <p class="text-sm text-slate-400">Hostname</p>
-            <p class="mt-3 text-2xl font-bold">{{host}}</p>
+            <p class="mt-3 text-2xl font-bold">{{ .Host }}</p>
           </article>
           <article class="rounded-3xl border border-white/10 bg-black/20 p-5">
             <p class="text-sm text-slate-400">CPU cores</p>
-            <p class="mt-3 text-2xl font-bold">{{cpu}}</p>
+            <p class="mt-3 text-2xl font-bold">{{ .CPU }}</p>
           </article>
           <article class="rounded-3xl border border-white/10 bg-black/20 p-5">
             <p class="text-sm text-slate-400">Used memory</p>
-            <p class="mt-3 text-2xl font-bold">{{memory}}</p>
+            <p class="mt-3 text-2xl font-bold">{{ .Memory }}</p>
           </article>
         </div>
 
@@ -40,12 +40,27 @@
           <article class="rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-6">
             <p class="text-sm text-cyan-100/80">Service role</p>
             <p class="mt-3 text-2xl font-bold">Landing page for deployment checks</p>
-            <p class="mt-3 text-slate-200">Подходит для smoke test после выката: страница показывает, что nginx, reverse proxy и C++ backend отвечают корректно.</p>
+            <p class="mt-3 text-slate-200">Подходит для smoke test после выката: один контейнер сразу отдает UI, health endpoint, JSON runtime API и `/metrics`, что упрощает rollout и отладку.</p>
           </article>
           <article class="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-6">
             <p class="text-sm text-amber-100/80">Uptime</p>
-            <p class="mt-3 text-3xl font-black">{{uptime}}</p>
+            <p class="mt-3 text-3xl font-black">{{ .Uptime }}</p>
             <p class="mt-2 text-slate-200">время работы ноды с `/proc/uptime`</p>
+          </article>
+        </div>
+
+        <div class="mt-4 grid gap-4 md:grid-cols-3">
+          <article class="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p class="text-sm text-slate-400">Environment</p>
+            <p class="mt-3 text-2xl font-bold">{{ .Environment }}</p>
+          </article>
+          <article class="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p class="text-sm text-slate-400">Version</p>
+            <p class="mt-3 text-2xl font-bold">{{ .Version }}</p>
+          </article>
+          <article class="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p class="text-sm text-slate-400">API</p>
+            <p class="mt-3 text-2xl font-bold"><a href="/api/runtime" class="text-cyan-300">/api/runtime</a></p>
           </article>
         </div>
       </div>
